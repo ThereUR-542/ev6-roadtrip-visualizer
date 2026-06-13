@@ -247,44 +247,60 @@ export function JourneyMap({
             const clickable = m.kind === 'charge' || m.kind === 'coffee' || m.kind === 'hotel';
             const r = m.kind === 'origin' || m.kind === 'dest' ? 8 : 6;
             return (
-              <g
-                key={`${m.kind}-${m.id}-${m.mileFromStart}`}
-                className={clickable ? 'marker' : undefined}
-                transform={`translate(${m.x},${m.y}) scale(${inv})`}
-                onClick={clickable ? () => onSelectStop(m.id, m.kind) : undefined}
-                style={{ cursor: clickable ? 'pointer' : 'default' }}
-              >
-                <title>
-                  {m.name}
-                  {m.detail ? ` — ${m.detail}` : ''}
-                </title>
-                <circle r={r + 4} fill={st.color} opacity={0.16} />
-                <circle r={r} fill={st.color} stroke="#06101f" strokeWidth={1.5} />
-                <text y={3.6} textAnchor="middle" fontSize={m.kind === 'origin' || m.kind === 'dest' ? 9 : 7} fill="#06101f">
-                  {st.glyph}
-                </text>
+              // Outer group owns POSITIONING only (translate + counter-scale). The
+              // hover-grow lives on the inner `.marker` group. This separation is
+              // load-bearing: a CSS `transform` on a node that is ALSO placed by an
+              // SVG `transform` attribute overrides that attribute — so putting
+              // `:hover { transform: scale() }` on the positioned node made the dot
+              // teleport off the cursor on hover, clicks missed, and no modal opened
+              // (the FR-9 "nothing happens" / "dot moves off the line" bug). Keep
+              // positioning and hover-scale on separate nodes.
+              <g key={`${m.kind}-${m.id}-${m.mileFromStart}`} transform={`translate(${m.x},${m.y}) scale(${inv})`}>
+                <g
+                  className={clickable ? 'marker' : undefined}
+                  onClick={clickable ? () => onSelectStop(m.id, m.kind) : undefined}
+                  // Non-clickable endpoint markers (origin/dest) must not absorb
+                  // pointer events — when one overlaps a clickable stop it would
+                  // otherwise swallow the click and no modal opens (the easternmost
+                  // stop sat under the destination marker). pointer-events:none lets
+                  // the click reach the clickable stop beneath.
+                  style={{ cursor: clickable ? 'pointer' : 'default', pointerEvents: clickable ? undefined : 'none' }}
+                >
+                  <title>
+                    {m.name}
+                    {m.detail ? ` — ${m.detail}` : ''}
+                  </title>
+                  <circle r={r + 4} fill={st.color} opacity={0.16} />
+                  <circle r={r} fill={st.color} stroke="#06101f" strokeWidth={1.5} />
+                  <text y={3.6} textAnchor="middle" fontSize={m.kind === 'origin' || m.kind === 'dest' ? 9 : 7} fill="#06101f">
+                    {st.glyph}
+                  </text>
+                </g>
               </g>
             );
           })}
 
-          {/* Endpoint labels */}
+          {/* Endpoint labels — decorative, must NOT steal clicks from the stop dots
+              they overlap (the dest label sat on top of the easternmost stop and
+              swallowed its click). pointer-events:none lets clicks fall through to
+              the marker underneath. */}
           {start && (
-            <g transform={`translate(${start.x},${start.y}) scale(${inv})`}>
+            <g transform={`translate(${start.x},${start.y}) scale(${inv})`} style={{ pointerEvents: 'none' }}>
               <text y={22} textAnchor="middle" fontSize={11} fill="var(--ink)" fontWeight={600}>
                 {direction === 'outbound' ? 'Jenks, OK' : 'Calverton, NY'}
               </text>
             </g>
           )}
           {end && (
-            <g transform={`translate(${end.x},${end.y}) scale(${inv})`}>
+            <g transform={`translate(${end.x},${end.y}) scale(${inv})`} style={{ pointerEvents: 'none' }}>
               <text y={-16} textAnchor="middle" fontSize={11} fill="var(--ink)" fontWeight={600}>
                 {direction === 'outbound' ? 'Calverton, NY' : 'Jenks, OK'}
               </text>
             </g>
           )}
 
-          {/* Scrub position (FR-12) */}
-          <g transform={`translate(${car.x},${car.y}) scale(${inv})`} filter="url(#glow)">
+          {/* Scrub position (FR-12) — decorative overlay; never intercept stop clicks. */}
+          <g transform={`translate(${car.x},${car.y}) scale(${inv})`} filter="url(#glow)" style={{ pointerEvents: 'none' }}>
             <circle r={11} fill="rgba(255,255,255,0.18)">
               <animate attributeName="r" values="9;14;9" dur="2s" repeatCount="indefinite" />
             </circle>

@@ -132,8 +132,19 @@ button {
   box-shadow: 0 6px 16px -8px rgba(159, 192, 255, 0.8);
 }
 
-/* --- Markers --- */
-.marker { cursor: pointer; transition: transform 0.12s ease; }
+/* --- Markers ---
+   The hover-grow must scale around the dot's OWN centre, never reposition it.
+   `transform-box: fill-box` + `transform-origin: center` make the CSS scale
+   anchor on the marker's bounding box. The dot is positioned by an SVG
+   `transform` attribute on the PARENT <g>; this `.marker` node carries no
+   positioning transform, so the hover scale can't clobber its placement
+   (that clobbering was the FR-9 "dot moves off the cursor → click misses" bug). */
+.marker {
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
 .marker:hover { transform: scale(1.18); }
 
 /* --- Range slider --- */

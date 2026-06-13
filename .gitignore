@@ -4,3 +4,5 @@ dist/
 .DS_Store
 .vite/
 .vercel/
+test-results/
+playwright-report/
