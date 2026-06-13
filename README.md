@@ -4,7 +4,7 @@ Interactive road-trip planner comparing three travel modes (2023 EV6 GT-Line AWD
 
 ## Live App
 
-**Production URL:** *(Vercel auto-deploy — see below after first deploy)*
+**Production URL:** https://ev6-roadtrip-visualizer.vercel.app
 
 **Repository:** https://github.com/ThereUR-542/ev6-roadtrip-visualizer
 
