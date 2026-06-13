@@ -33,7 +33,7 @@ export default function App() {
   const [selected, setSelected] = useState<{ id: string; kind: string } | null>(null);
 
   const model = useMemo(() => buildTripModel(settings), [settings]);
-  const weather = useWeather(settings.departureDate);
+  const weather = useWeather(settings.departureDate, settings.avgSpeedMph);
 
   const patchSettings = (patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch }));
 

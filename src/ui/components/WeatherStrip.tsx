@@ -1,5 +1,5 @@
 import type { WeatherState } from '../useWeather';
-import { fmtDateLong } from '../format';
+import { fmtDateLong, fmtDateShort } from '../format';
 import { SectionTitle } from './common';
 
 /** Weather along the route + proactive guidance (FR-11). Open-Meteo, no key (OQ-3). */
@@ -35,6 +35,11 @@ export function WeatherStrip({
           style={{ width: 'auto' }}
         />
         <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>{fmtDateLong(departureDate)}</span>
+      </div>
+
+      <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', lineHeight: 1.4, marginTop: -2 }}>
+        Each waypoint is forecast for the day you actually reach it (~10–11 h driving/day with overnight stops), not the
+        departure day — so a stop two days out shows that day's weather. Day-of-arrival is an estimate (ACC-5).
       </div>
 
       {/* Proactive guidance */}
@@ -77,6 +82,13 @@ export function WeatherStrip({
             <div key={p.label} className="glass" style={{ flex: '0 0 auto', minWidth: 132, padding: 12, borderRadius: 12 }}>
               <div style={{ fontSize: 12, color: 'var(--ink-dim)' }}>
                 {p.label}, {p.state}
+              </div>
+              <div
+                style={{ fontSize: 11, color: 'var(--accent)', marginTop: 2, fontWeight: 600 }}
+                title={`Forecast for ${fmtDateLong(p.forecastDate)} — day ${p.dayOffset + 1} of the drive (estimate, ACC-5).`}
+              >
+                {fmtDateShort(p.forecastDate)}
+                {p.dayOffset > 0 && <span style={{ color: 'var(--ink-faint)', fontWeight: 400 }}> · day {p.dayOffset + 1}</span>}
               </div>
               <div style={{ fontSize: 26, marginTop: 2 }}>{p.emoji}</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{p.condition}</div>

@@ -3,6 +3,7 @@ import { findChargingStation, findCoffeeShop, findHotel } from '../model';
 import type { VerifiedSource } from '../../data';
 import { fmtUsd } from '../format';
 import { EstBadge } from './common';
+import { streetViewCoordFor, streetViewEmbedUrl } from '../geo';
 
 /**
  * Glassmorphic stop detail modal (FR-9/FR-10): keyless embedded Google Map
@@ -22,6 +23,7 @@ export function StopModal({ id, kind, onClose }: { id: string; kind: string; onC
 
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(`${data.name}, ${data.address}`)}&output=embed`;
   const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${data.name}, ${data.address}`)}`;
+  const sv = streetViewCoordFor(id);
 
   return (
     <div className="overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={data.name}>
@@ -98,16 +100,43 @@ export function StopModal({ id, kind, onClose }: { id: string; kind: string; onC
             </div>
           )}
 
-          {/* Photos — real imagery via Google, never fabricated (ACC-3) */}
+          {/* Photos & Street View — real, draggable imagery of the actual location
+              via the keyless Google Street View embed (FR-9, OQ-3). No stock or
+              fabricated photos (ACC-3): Street View is genuine imagery of this site. */}
           <div>
             <H>Photos &amp; Street View</H>
-            <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--ink-faint)', lineHeight: 1.5 }}>
-              To honor the no-fake-data rule (ACC-3), this app shows real imagery from the live map above rather than
-              stock photos. Open the location on Google Maps for verified photos and reviews:
-            </p>
-            <a href={mapsLink} target="_blank" rel="noreferrer" className="badge" style={{ textDecoration: 'none' }}>
-              ↗ View photos & reviews on Google Maps
-            </a>
+            {sv ? (
+              <>
+                <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                  <iframe
+                    title={`Street View of ${data.name}`}
+                    src={streetViewEmbedUrl(sv.lat, sv.lng)}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                    style={{ width: '100%', height: 260, border: 0, display: 'block', background: '#0a0f1c' }}
+                  />
+                </div>
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--ink-faint)', lineHeight: 1.5 }}>
+                  Live Google Street View — drag to look around. Real imagery of the actual location (ACC-3); no
+                  stock photos.{' '}
+                  <a href={mapsLink} target="_blank" rel="noreferrer">
+                    Open in Google Maps
+                  </a>{' '}
+                  for the full photo gallery & reviews.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--ink-faint)', lineHeight: 1.5 }}>
+                  To honor the no-fake-data rule (ACC-3), this app shows real imagery from the live map above rather
+                  than stock photos. Open the location on Google Maps for verified photos and reviews:
+                </p>
+                <a href={mapsLink} target="_blank" rel="noreferrer" className="badge" style={{ textDecoration: 'none' }}>
+                  ↗ View photos & reviews on Google Maps
+                </a>
+              </>
+            )}
           </div>
 
           {/* Sources (ACC-1/ACC-2) */}

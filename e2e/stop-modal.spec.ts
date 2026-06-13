@@ -39,15 +39,27 @@ test.describe('FR-9 stop modals — real pointer clicks', () => {
     await realClick(page, marker);
 
     // Fallback: look for the Google Maps iframe that StopModal renders
-    const mapsEmbed = page.locator('iframe[src*="google.com/maps"]');
+    // Scope to the map embed only (output=embed); the modal also renders a
+    // separate Street View iframe (output=svembed), so the bare "google.com/maps"
+    // match would be ambiguous under Playwright strict mode.
+    const mapsEmbed = page.locator('iframe[src*="output=embed"]');
     await expect(mapsEmbed).toBeVisible({ timeout: 5000 });
+
+    // FIX-1 (FR-9): the modal must embed a real, keyless Google Street View
+    // panorama of the location — not just a link-out (no API key, OQ-3).
+    const streetView = page.locator('iframe[src*="output=svembed"]');
+    await expect(streetView).toBeVisible({ timeout: 5000 });
+    await expect(streetView).toHaveAttribute('src', /cbll=-?\d+\.\d+,-?\d+\.\d+/);
   });
 
   test('every clickable stop dot opens the modal with a real hover-then-click', async ({ page }) => {
     const markers = page.locator('g.marker');
     const n = await markers.count();
     expect(n).toBeGreaterThan(0);
-    const mapsEmbed = page.locator('iframe[src*="google.com/maps"]');
+    // Scope to the map embed only (output=embed); the modal also renders a
+    // separate Street View iframe (output=svembed), so the bare "google.com/maps"
+    // match would be ambiguous under Playwright strict mode.
+    const mapsEmbed = page.locator('iframe[src*="output=embed"]');
     for (let i = 0; i < n; i++) {
       await realClick(page, markers.nth(i));
       await expect(mapsEmbed, `dot #${i} should open a modal`).toBeVisible({ timeout: 5000 });
@@ -62,7 +74,10 @@ test.describe('FR-9 stop modals — real pointer clicks', () => {
     await realClick(page, chargeMarker);
 
     // The modal should contain some identifying text (stop name, button, etc.)
-    const mapsEmbed = page.locator('iframe[src*="google.com/maps"]');
+    // Scope to the map embed only (output=embed); the modal also renders a
+    // separate Street View iframe (output=svembed), so the bare "google.com/maps"
+    // match would be ambiguous under Playwright strict mode.
+    const mapsEmbed = page.locator('iframe[src*="output=embed"]');
     await expect(mapsEmbed).toBeVisible({ timeout: 5000 });
 
     // Escape closes the modal

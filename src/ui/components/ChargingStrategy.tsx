@@ -43,6 +43,26 @@ export function ChargingStrategy({
         />
       </div>
 
+      <div
+        className="glass"
+        style={{ padding: '10px 13px', borderRadius: 12, borderLeft: '3px solid var(--accent)', fontSize: 12.5, color: 'var(--ink-dim)', lineHeight: 1.5 }}
+      >
+        <strong style={{ color: 'var(--accent)' }}>Why no Francis Energy stop?</strong> DR-1 names Francis Energy as
+        the first-priority network, so it was evaluated first. As of 2026-06-13, Francis Energy has{' '}
+        <strong>no qualifying ≥200 kW station on the eastbound Jenks → Calverton corridor</strong> — its Tulsa-area
+        hub tops out at 150 kW-class hardware, and its other Oklahoma sites sit inside the first-leg 100%-charge
+        window where no stop is needed. Electrify America (the second-priority network) is therefore used for all 16
+        stops. Verified against{' '}
+        <a href="https://francisevcharging.zendesk.com/hc/en-us" target="_blank" rel="noreferrer">
+          Francis Energy
+        </a>{' '}
+        and the{' '}
+        <a href="https://dcfctracker.com/stations/156540" target="_blank" rel="noreferrer">
+          DC fast-charger tracker
+        </a>{' '}
+        (full audit trail in the verification artifact, ACC-1/ACC-2).
+      </div>
+
       <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-faint)', lineHeight: 1.5 }}>
         <strong style={{ color: 'var(--accent)' }}>DR-1 filter (absolute):</strong> only ≥200 kW DC fast
         chargers appear here (200–300 kW delivered to the EV6, whose ~235 kW peak caps the 350 kW-class hardware),

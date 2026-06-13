@@ -208,3 +208,46 @@ Hotels — **Courtyard Columbus West/Hilliard** (conflicting branding — appare
 Riverhead / Hotel Indigo East End** (brand pages blocked; 2-source verification incomplete);
 no verified hotel adjacent to the Columbus Westpointe charger — Dayton-area stop selected
 instead.
+
+## Street View coordinates (FR-9 modals — added in PRD-42 post-review fix)
+
+The stop modals embed a live, keyless Google **Street View** panorama of each
+location (replacing the prior text-only "Photos & Street View" section that the
+client flagged). Street View requires a precise lat/lng (`cbll`); the existing
+`src/ui/geo.ts` `STOP_COORDS` are approximate map-placement values and snap to the
+wrong panorama, so a dedicated precise table (`STREET_VIEW_COORDS`) was added.
+
+- **Method (ACC-5 estimate):** each coordinate was geocoded from the location's
+  *already-verified* street address (the addresses above) via OpenStreetMap /
+  Nominatim on 2026-06-13. These are a display aid derived from verified addresses,
+  not a new ≥2-source physical fact — so they are labeled an estimate, not ACC-1
+  data. Street View itself is genuine Google imagery of the real location (ACC-3);
+  no stock or fabricated photos are ever shown.
+- **Validation:** every one of the 27 ids was rendered through the keyless
+  `maps.google.com/...&output=svembed` embed and confirmed to show a live, draggable
+  panorama (no "No Street View available" / blank fallback).
+- **Two road-snapped entries:** `ea-walmart-mount-vernon-mo` and
+  `ea-firefly-grill-effingham-il` geocoded to a large building's rooftop centroid,
+  which has no panorama within Google's snap radius (it fell back to a blank frame).
+  Each was moved a few metres onto the site's public access road
+  (W Mount Vernon Blvd / Ave of Mid-America) where a real panorama exists. Marked
+  in the code comments. All other coordinates use the rooftop/address geocode.
+
+## DR-1 Francis Energy callout (FR-? UI note — added in PRD-42 post-review fix)
+
+The EV6 charging-strategy panel now states explicitly *why* no Francis Energy stop
+appears, surfacing the §Excluded finding above in the UI: Francis Energy is the DR-1
+first-priority network and was evaluated first, but has no qualifying ≥200 kW station
+on the eastbound Jenks → Calverton corridor (Tulsa hub is 150 kW-class; other OK sites
+sit inside the first-leg 100% window), so Electrify America is used. No data changed —
+this only exposes the existing verified conclusion (sources: Francis Energy network +
+DC fast-charger tracker, recorded above).
+
+## Per-driving-day weather (FR-11 — refined in PRD-42 post-review fix)
+
+The "Weather along the route" forecast previously used the single departure date for
+every waypoint. It now advances the forecast date per waypoint to the day the traveler
+actually reaches it: day-of-arrival = ⌊(route mile ÷ avg speed) ÷ 10.5 h/day⌋, using
+the same ~10–11 h/day overnight cadence that places the hotels (§Hotels). One Open-Meteo
+range request (no key, OQ-3) covers all needed days. Day-of-arrival and the forecast
+remain estimates (ACC-5); FR-11 proactive guidance is preserved per waypoint.

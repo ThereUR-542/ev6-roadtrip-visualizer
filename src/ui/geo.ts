@@ -88,6 +88,64 @@ export function coordsFor(id: string): { lon: number; lat: number } | undefined 
 }
 
 /**
+ * Precise display coordinates for the in-modal Google Street View embed (FR-9).
+ *
+ * These are NOT the approximate map-placement values in STOP_COORDS above; each
+ * was geocoded from the location's already-verified street address (OpenStreetMap
+ * / Nominatim, 2026-06-13) and is precise enough that the keyless Street View
+ * embed (`maps.google.com/...&output=svembed`) snaps to a real panorama of the
+ * actual location — never a placeholder (ACC-3). They are a display aid derived
+ * from verified addresses, so they are labeled an estimate (ACC-5) in docs, not
+ * a new ≥2-source fact. Two entries are intentionally snapped a few metres to the
+ * site's access road because the rooftop centroid of a large building has no
+ * Street View panorama within Google's snap radius (it would fall back to a blank
+ * "No Street View available" frame). Every id here was verified to render a live,
+ * draggable panorama. See docs/verification.md §Street View coordinates.
+ */
+export const STREET_VIEW_COORDS: Record<string, { lat: number; lng: number }> = {
+  'ea-walmart-mount-vernon-mo': { lat: 37.094447, lng: -93.822614 }, // road-snapped (no pano at rooftop centroid)
+  'ea-caseys-lebanon-mo': { lat: 37.674784, lng: -92.659823 },
+  'ea-walmart-sullivan-mo': { lat: 38.220807, lng: -91.154915 },
+  'ea-walmart-collinsville-il': { lat: 38.674732, lng: -90.017379 },
+  'ea-firefly-grill-effingham-il': { lat: 39.139298, lng: -88.565152 }, // road-snapped (no pano at rooftop centroid)
+  'ea-walmart-terre-haute-in': { lat: 39.399622, lng: -87.405889 },
+  'ea-walmart-indianapolis-emerson-in': { lat: 39.749194, lng: -86.082823 },
+  'ea-walmart-huber-heights-oh': { lat: 39.863295, lng: -84.098294 },
+  'ea-walmart-columbus-westpointe-oh': { lat: 39.983368, lng: -83.145034 },
+  'ea-walmart-cambridge-oh': { lat: 39.989419, lng: -81.576689 },
+  'ea-sheetz-belle-vernon-pa': { lat: 40.185499, lng: -79.814462 },
+  'ea-sheetz-bedford-pa': { lat: 40.05279, lng: -78.510285 },
+  'ea-sheetz-carlisle-pa': { lat: 40.212515, lng: -77.178607 },
+  'ea-brixmor-village-west-allentown-pa': { lat: 40.596887, lng: -75.524639 },
+  'ea-brixmor-parkway-plaza-carle-place-ny': { lat: 40.748216, lng: -73.61772 },
+  'ea-manorville-square-manorville-ny': { lat: 40.82521, lng: -72.807803 },
+  'black-wall-street-liquid-lounge': { lat: 36.177314, lng: -95.986251 },
+  'el-cafecito-springfield-mo': { lat: 37.169738, lng: -93.295331 },
+  'e61-cafe-st-louis': { lat: 38.64821, lng: -90.278395 },
+  'loose-goose-terre-haute-in': { lat: 39.433509, lng: -87.406708 },
+  'claypot-coffee-house-indianapolis': { lat: 39.642418, lng: -86.130569 },
+  'tiger-eye-coffee-harrisburg-pa': { lat: 40.259825, lng: -76.843859 },
+  'nowhere-coffee-roastery-allentown-pa': { lat: 40.600693, lng: -75.475013 },
+  'hampton-inn-dayton-huber-heights': { lat: 39.866782, lng: -84.135918 },
+  'holiday-inn-express-dayton-huber-heights': { lat: 39.866673, lng: -84.134881 },
+  'hyatt-place-long-island-east-end': { lat: 40.918463, lng: -72.655991 },
+  'residence-inn-long-island-east-end': { lat: 40.923552, lng: -72.715355 },
+};
+
+export function streetViewCoordFor(id: string): { lat: number; lng: number } | undefined {
+  return STREET_VIEW_COORDS[id];
+}
+
+/**
+ * Keyless Google Street View embed URL (OQ-3) for a verified lat/lng. Uses the
+ * no-key `output=svembed` panorama endpoint; the camera snaps to the nearest
+ * real panorama and is fully draggable. `cbp` only sets the initial framing.
+ */
+export function streetViewEmbedUrl(lat: number, lng: number): string {
+  return `https://maps.google.com/maps?layer=c&cbll=${lat},${lng}&cbp=12,20,0,0,0&output=svembed`;
+}
+
+/**
  * Route spine: ordered geographic waypoints (origin -> corridor charging
  * stations by route mile -> destination) tagged with their route mile from
  * Jenks. The corridor is monotonic west->east, so this traces the real roads

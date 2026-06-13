@@ -36,3 +36,36 @@ Authoritative decisions made by the CEO for the build of `docs/PRD.md` (canonica
 - CHG-1..CHG-6 charging discipline and DR-1/DR-2/DR-3 display filters are pass/fail gates.
 - ACC-1..ACC-5: every physical location verified from ≥2 independent sources and documented; zero fake/placeholder data.
 - Strict phase order 1→2→3→4→5; phases are chained with first-class blockers in Paperclip.
+
+## PRD-42 — post-review defect fixes (2026-06-13)
+
+Client reviewed the live build (PRD-41) and confirmed the 5 previously-questioned areas
+(comparison table, return trip, Southwest, weather model, timeline slider) are fine — left
+unchanged. The agreed fixes:
+
+- **FIX 1 — Stop modals embed real Google Street View (priority).** The "Photos & Street
+  View" section now renders a live, draggable, keyless Street View panorama
+  (`output=svembed`, OQ-3, no key) of the exact location, with an "Open in Google Maps"
+  link below it for the full gallery. The existing interactive map embed is retained above
+  it. Precise coordinates added in `src/ui/geo.ts` (`STREET_VIEW_COORDS`), geocoded from the
+  verified addresses and each validated to render a real panorama; provenance in
+  `docs/verification.md §Street View coordinates`. Holds ACC-3 (real imagery, no placeholders).
+- **FIX 2 — Francis Energy callout.** Added a UI note to the EV6 charging-strategy panel
+  explaining Francis Energy was prioritized (DR-1) but has no qualifying ≥200 kW station on
+  the corridor. Surfaces the existing verified `verification.md §Excluded` conclusion; no
+  data changed.
+- **FIX 3 — Weather per driving-day.** Each weather waypoint is now forecast for the day the
+  traveler reaches it (cumulative driving time vs the ~10–11 h/day overnight cadence) instead
+  of the departure day. Single Open-Meteo range request; estimate labeled (ACC-5); FR-11
+  guidance preserved.
+- **Optional (inline review snippets) — DECLINED, documented.** The PRD says "reviews," and
+  the client flagged quoting 1–2 Google review snippets as "for your call, if low-cost." The
+  verified dataset records only aggregate Google rating + review count (no quotable, verifiably-
+  sourced individual snippets). Inventing or scraping snippets would violate ACC-3, so modals
+  keep the aggregate star + count and the link-out to Google for full reviews. Revisit only if
+  a verifiable snippet source is added to the dataset.
+
+Tests: added `src/ui/geo.test.ts` (every clickable stop has a valid in-US Street View coord;
+keyless svembed URL; per-day weather day-offset is monotonic and advances downstream) and a
+Street View assertion to the Playwright modal e2e. Full suite green (47 unit tests + typecheck
++ build).

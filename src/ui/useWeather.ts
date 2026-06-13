@@ -1,10 +1,15 @@
 /**
  * Weather along the route via Open-Meteo (FR-11, OQ-3: free, no API key).
  * Forecasts are sampled at representative waypoints across the whole corridor
- * (not just endpoints) for the chosen departure date, then turned into
- * proactive guidance. All weather is an estimate and labeled as such (ACC-5).
+ * (not just endpoints). Because the corridor is a multi-day (~3-day each-way)
+ * drive, each waypoint is forecast for the day the traveler actually *reaches*
+ * it, not the departure day: day-of-arrival is derived from the cumulative
+ * driving time to that waypoint and the planned overnight cadence (the same
+ * ~10–11 h/day boundary that places the overnight hotels). A single range
+ * request covers every needed day. All weather is an estimate (ACC-5).
  */
 import { useEffect, useState } from 'react';
+import { addDaysIso } from './format';
 
 export interface RouteWaypoint {
   label: string;
@@ -13,6 +18,20 @@ export interface RouteWaypoint {
   lon: number;
   /** Approx route mile from Jenks — orders the points west->east. */
   mile: number;
+}
+
+/**
+ * Planned driving hours per day before an overnight stop. Matches the cadence
+ * used to place the overnight hotels (~10–11 h/day; docs/verification.md
+ * §Hotels). With the editable average speed (FR-7) this maps a waypoint's route
+ * mile to a day-of-arrival. Estimate (ACC-5).
+ */
+export const DRIVE_HOURS_PER_DAY = 10.5;
+
+/** Day index (0 = departure day) the traveler reaches a given route mile. */
+export function dayOffsetForMile(mile: number, avgSpeedMph: number): number {
+  if (avgSpeedMph <= 0) return 0;
+  return Math.floor(mile / avgSpeedMph / DRIVE_HOURS_PER_DAY);
 }
 
 /** Representative points spanning the route (FR-11: along the route). */
@@ -34,6 +53,10 @@ export interface WaypointForecast extends RouteWaypoint {
   tMinF: number;
   precipProbPct: number;
   windMaxMph: number;
+  /** Day index reached (0 = departure day). */
+  dayOffset: number;
+  /** Actual forecast date used for this waypoint (YYYY-MM-DD). */
+  forecastDate: string;
   /** Severity for proactive guidance: 0 none, 1 advisory, 2 warning. */
   severity: 0 | 1 | 2;
   guidance?: string;
@@ -76,7 +99,7 @@ function deriveGuidance(p: Omit<WaypointForecast, 'severity' | 'guidance'>): { s
   return { severity: 0 };
 }
 
-export function useWeather(departureDate: string): WeatherState {
+export function useWeather(departureDate: string, avgSpeedMph: number): WeatherState {
   const [state, setState] = useState<WeatherState>({
     loading: true,
     error: null,
@@ -89,13 +112,18 @@ export function useWeather(departureDate: string): WeatherState {
     const ctrl = new AbortController();
     setState((s) => ({ ...s, loading: true, error: null }));
 
+    // Day-of-arrival per waypoint; request one range covering the whole trip.
+    const offsets = WEATHER_WAYPOINTS.map((w) => dayOffsetForMile(w.mile, avgSpeedMph));
+    const maxOffset = offsets.length ? Math.max(...offsets) : 0;
+    const endDate = addDaysIso(departureDate, maxOffset);
+
     const lats = WEATHER_WAYPOINTS.map((w) => w.lat).join(',');
     const lons = WEATHER_WAYPOINTS.map((w) => w.lon).join(',');
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}` +
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max` +
       `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto` +
-      `&start_date=${departureDate}&end_date=${departureDate}`;
+      `&start_date=${departureDate}&end_date=${endDate}`;
 
     fetch(url, { signal: ctrl.signal })
       .then((r) => {
@@ -108,7 +136,13 @@ export function useWeather(departureDate: string): WeatherState {
         let anyData = false;
         WEATHER_WAYPOINTS.forEach((wp, i) => {
           const d = (arr[i] as { daily?: Record<string, unknown[]> } | undefined)?.daily;
-          const code = d?.weather_code?.[0];
+          // Index this waypoint at the day it is actually reached. Clamp to the
+          // available range so the last leg still shows the latest day we have
+          // rather than dropping out when the trip nears the ~16-day horizon.
+          const times = (d?.time as string[] | undefined) ?? [];
+          const wanted = offsets[i];
+          const idx = times.length ? Math.min(wanted, times.length - 1) : wanted;
+          const code = d?.weather_code?.[idx];
           if (code === undefined || code === null) return;
           anyData = true;
           const { condition, emoji } = describeCode(Number(code));
@@ -117,10 +151,12 @@ export function useWeather(departureDate: string): WeatherState {
             weatherCode: Number(code),
             condition,
             emoji,
-            tMaxF: Math.round(Number(d?.temperature_2m_max?.[0] ?? NaN)),
-            tMinF: Math.round(Number(d?.temperature_2m_min?.[0] ?? NaN)),
-            precipProbPct: Number(d?.precipitation_probability_max?.[0] ?? 0),
-            windMaxMph: Number(d?.wind_speed_10m_max?.[0] ?? 0),
+            tMaxF: Math.round(Number(d?.temperature_2m_max?.[idx] ?? NaN)),
+            tMinF: Math.round(Number(d?.temperature_2m_min?.[idx] ?? NaN)),
+            precipProbPct: Number(d?.precipitation_probability_max?.[idx] ?? 0),
+            windMaxMph: Number(d?.wind_speed_10m_max?.[idx] ?? 0),
+            dayOffset: wanted,
+            forecastDate: times[idx] ?? addDaysIso(departureDate, wanted),
           };
           const g = deriveGuidance(base);
           points.push({ ...base, ...g });
@@ -145,7 +181,7 @@ export function useWeather(departureDate: string): WeatherState {
       });
 
     return () => ctrl.abort();
-  }, [departureDate]);
+  }, [departureDate, avgSpeedMph]);
 
   return state;
 }
