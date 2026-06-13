@@ -308,7 +308,7 @@ export function JourneyMap({
         }}
       >
         <button type="button" aria-label="Zoom in" title="Zoom in" style={btnStyle} onClick={() => zoomBtn(1.4)}>
-          ＋
+          +
         </button>
         <button
           type="button"
@@ -317,7 +317,7 @@ export function JourneyMap({
           style={{ ...btnStyle, borderTop: '1px solid var(--glass-border)' }}
           onClick={() => zoomBtn(1 / 1.4)}
         >
-          －
+          &minus;
         </button>
         <button
           type="button"
@@ -326,7 +326,7 @@ export function JourneyMap({
           style={{ ...btnStyle, borderTop: '1px solid var(--glass-border)', fontSize: 13 }}
           onClick={reset}
         >
-          ⟲
+          ↺
         </button>
       </div>
 

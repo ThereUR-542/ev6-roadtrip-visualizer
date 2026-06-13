@@ -1,8 +1,10 @@
 name: CI
 
-# Gates every push/PR so a blank-shell regression (PLE-46/PLE-47) can never
-# ship green again: the suite now includes a jsdom render smoke test that
-# mounts <App/> and asserts the UI actually renders.
+# Gates every push/PR so blank-shell (PLE-46/PLE-47) and modal-click (PLE-52)
+# regressions can never ship green again. Suite includes:
+#   1. jsdom render smoke test — mounts <App/> and asserts UI renders
+#   2. Playwright real-browser e2e — genuine pointer click on a stop marker
+#      asserts the modal + Google Maps embed open (FR-9 guard)
 on:
   push:
     branches: [main]
@@ -21,3 +23,24 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+      - name: Run Playwright e2e tests (FR-9 modal regression guard)
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
