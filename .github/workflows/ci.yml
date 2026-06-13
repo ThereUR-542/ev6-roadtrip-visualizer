@@ -1,0 +1,23 @@
+name: CI
+
+# Gates every push/PR so a blank-shell regression (PLE-46/PLE-47) can never
+# ship green again: the suite now includes a jsdom render smoke test that
+# mounts <App/> and asserts the UI actually renders.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
